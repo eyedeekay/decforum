@@ -23,5 +23,10 @@ docker build -t eyedeekay/decforum https://github.com/eyedeekay/decforum.git
 ```
 
 ```sh
-docker run --net=host eyedeekay/decforum
+docker run \
+    -d \
+    --net=host \
+    --restart=always \
+    --volume=decforum:/var/lib/decforum \
+    eyedeekay/decforum
 ```
