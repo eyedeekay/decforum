@@ -24,7 +24,8 @@ docker build -t eyedeekay/decforum https://github.com/eyedeekay/decforum.git
 
 ```sh
 docker run \
-    -d \
+    --detatch \
+    --name=decforum \
     --net=host \
     --restart=always \
     --volume=decforum:/var/lib/decforum \
