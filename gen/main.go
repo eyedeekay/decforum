@@ -52,8 +52,8 @@ func UnzipTarGzFile(filename, tempDir string) (string, error) {
 }
 
 func main() {
-	// download and extract: https://github.com/Ionaru/easy-markdown-editor/tarball/master
-	filename, err := DownloadAndSave("https://github.com/Ionaru/easy-markdown-editor/tarball/master", "easymde.tar.gz")
+	// download and extract: https://github.com/Ionaru/easy-markdown-editor/tarball/main
+	filename, err := DownloadAndSave("https://github.com/Ionaru/easy-markdown-editor/tarball/main", "easymde.tar.gz")
 	if err != nil {
 		log.Fatal(err)
 	}

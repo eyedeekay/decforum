@@ -16,6 +16,7 @@ import (
 	sam "github.com/eyedeekay/sam3/helper"
 	git "github.com/go-git/go-git/v5" // with go modules enabled (GO111MODULE=on or outside GOPATH)
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/sosedoff/gitkit"
@@ -174,7 +175,10 @@ func CloneARemote(remote string, dir string) error {
 	client.InstallProtocol("http", githttp.NewClient(customClient))
 
 	r, err := git.PlainClone(dir, false, &git.CloneOptions{
-		URL: remote,
+		URL:           remote,
+		NoCheckout:    false,
+		ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+		Tags:          git.AllTags,
 	})
 	if err != nil {
 		return err
@@ -184,13 +188,24 @@ func CloneARemote(remote string, dir string) error {
 		return err
 	}
 	log.Println("cloned", remote, "to", dir, "at", head.Hash())
+	// fetch all the branches
+	err = r.Fetch(&git.FetchOptions{
+		RemoteName: "origin",
+		RefSpecs:   []config.RefSpec{config.RefSpec("+refs/heads/*:refs/remotes/origin/*")},
+	})
+	if err != nil {
+		return err
+	}
+
+	// checkout the main branch
 	w, err := r.Worktree()
 	if err != nil {
 		return err
 	}
-	// checkout master
+
+	// checkout main
 	err = w.Checkout(&git.CheckoutOptions{
-		Hash: head.Hash(),
+		Branch: "main",
 	})
 	return nil
 }

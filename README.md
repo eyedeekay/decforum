@@ -15,3 +15,13 @@ Node, NPM, Gulp.
 ```sh
 sudo apt-get install nodejs npm gulp
 ```
+
+### Docker Setup:
+
+```sh
+docker build -t eyedeekay/decforum https://github.com/eyedeekay/decforum.git
+```
+
+```sh
+docker run --net=host eyedeekay/decforum
+```
