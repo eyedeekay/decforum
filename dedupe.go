@@ -29,6 +29,8 @@ func DeduplicateLinesInFile(filename string) error {
 		// Add the line to the new string
 		newString += line + "\n"
 	}
+	newString = strings.TrimLeft(newString, "\n")
+	newString = strings.TrimRight(newString, "\n")
 	// Write the new string to the file
 	err = ioutil.WriteFile(filename, []byte(newString), 0644)
 	if err != nil {

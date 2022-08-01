@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"crypto/tls"
 	"embed"
 	"encoding/hex"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/eyedeekay/goSam"
 	sam "github.com/eyedeekay/sam3/helper"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday/v2"
@@ -165,6 +167,11 @@ func ServeWWW(db string) {
 		output := fmt.Sprintf("http://%s/db", []byte(dblnb32))
 		w.Write([]byte(output))
 	}))
+	http.Handle("/peers", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if bytes, err := ioutil.ReadFile(*peers); err == nil {
+			w.Write(bytes)
+		}
+	}))
 	http.Handle("/addpeer", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if *peers != "" {
 			if _, err := os.Stat(*peers); err == nil {
@@ -185,17 +192,61 @@ func ServeWWW(db string) {
 						fmt.Printf("%s is not a valid URL\n", peer)
 						return
 					}
-
-					// append the peer to the end of the file at *peers
-					peersFile, err := os.OpenFile(*peers, os.O_APPEND|os.O_WRONLY, 0600)
-					if err != nil {
-						fmt.Printf("failed to open peers file: %s\n", err)
-						return
+					if strings.HasSuffix(peer, "/db") {
+						// append the peer to the end of the file at *peers
+						peersFile, err := os.OpenFile(*peers, os.O_APPEND|os.O_WRONLY, 0600)
+						if err != nil {
+							fmt.Printf("failed to open peers file: %s\n", err)
+							return
+						}
+						peersFile.WriteString("\n" + peer)
+						log.Println("added peer: " + peer)
+						peersFile.Close()
+						defer DeduplicateLinesInFile(*peers)
 					}
-					peersFile.WriteString("\n" + peer)
-					log.Println("added peer: " + peer)
-					peersFile.Close()
-					defer DeduplicateLinesInFile(*peers)
+					if strings.HasSuffix(peer, "peers") {
+						sam, err := goSam.NewDefaultClient()
+						if err != nil {
+							fmt.Printf("failed to create SAM client: %s\n", err)
+							return
+						}
+						defer sam.Close()
+						tr := &http.Transport{
+							Dial: sam.Dial,
+							TLSClientConfig: &tls.Config{
+								InsecureSkipVerify: true,
+							},
+						}
+						client := &http.Client{Transport: tr}
+						resp, err := client.Get(peer)
+						if err != nil {
+							fmt.Printf("failed to get peers file: %s\n", err)
+							return
+						}
+						defer resp.Body.Close()
+						if resp.StatusCode != 200 {
+							fmt.Printf("failed to get peers file: %s\n", resp.Status)
+							return
+						}
+						bodyBytes, err := ioutil.ReadAll(resp.Body)
+						if err != nil {
+							fmt.Printf("failed to read peers file: %s\n", err)
+							return
+						}
+						for _, line := range strings.Split(string(bodyBytes), "\n") {
+							if line != "" {
+								peersFile, err := os.OpenFile(*peers, os.O_APPEND|os.O_WRONLY, 0600)
+								if err != nil {
+									fmt.Printf("failed to open peers file: %s\n", err)
+									return
+								}
+								peersFile.WriteString("\n" + line)
+								log.Println("added peer: " + line)
+								peersFile.Close()
+								defer DeduplicateLinesInFile(*peers)
+							}
+						}
+					}
 				}
 			}
 		}
