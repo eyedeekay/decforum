@@ -36,10 +36,10 @@
 <span>Share Peer: </span>
 </label>
 <input type="text" id="share" name="share" placeholder="http://peer.b32.i2p/db">
-<input type="submit" value="Copy">
+<input type="submit" value="Share Self">
 </form>
 <form id="sharepeers">
-<input type="submit" value="Copy List">
+<input type="submit" value="Share All">
 </form>
 </div>
 <div class="container" id="feed">
@@ -61,14 +61,14 @@
     document.getElementById("sharepeer").addEventListener("submit", function(event) {
         event.preventDefault();
         navigator.clipboard.writeText(document.getElementById("share").value);
-        alert("Copied share address to clipboard");
+        alert("Copied share peer to clipboard");
     });
     // when the user clicks the submit button, copy the hostname of the current page to the clipboard, + "peers"
     document.getElementById("sharepeers").addEventListener("submit", function(event) {
         event.preventDefault();
         navigator.clipboard.writeText("http://" + window.location.hostname + "/peers");
         //navigator.clipboard.writeText(document.getElementById("share").value);
-        alert("Copied share address to clipboard");
+        alert("Copied share all peers to clipboard");
     });
 
     // capture the form "submit" event for the form with id="addpeer"
