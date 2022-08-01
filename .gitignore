@@ -1,0 +1,6 @@
+*.tar.gz
+sparksuite*
+easymde
+decforum
+*.i2p.private
+*.i2p.public.txt

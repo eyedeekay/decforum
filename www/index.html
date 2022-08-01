@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="description" content="Webpage description goes here" />
+  <meta charset="utf-8">
+  <title>Change_me</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="">
+  <link rel="stylesheet" href="/easymde.min.css">
+  <script src="/easymde.min.js"></script>
+  <link rel="stylesheet" href="/home.css">
+</head>
+<body>
+<div class="container">
+<form id="postform">
+<textarea id="easymde"></textarea>
+<label for="newthread">
+<span>Create New Thread: </span>
+</label>
+<input type="checkbox" id="newthread" name="newthread" value="newthread">
+<input type="hidden" id="threadid" name="threadid" placeholder="threadid">
+<input type="submit" value="Submit">
+</form>
+<br>
+<form id="addpeer">
+<label for="peer">
+<span>Add Peer: </span>
+</label>
+<input type="text" id="peer" name="peer" placeholder="http://peer.b32.i2p/db">
+<input type="submit" value="Submit">
+</form>
+</div>
+<div class="container" id="feed">
+</div>
+<script>
+    var easymde = new EasyMDE();
+
+    // capture the form "submit" event for the form with id="addpeer"
+    document.getElementById("addpeer").onsubmit = function() {
+        // create a new XMLHttpRequest object
+        var xhr = new XMLHttpRequest();
+        // set the HTTP method to POST
+        xhr.open("POST", "/addpeer", true);
+        // set the HTTP request header to application/x-www-form-urlencoded
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        // get the peer from the form element with id="peer"
+        var peer = document.getElementById("peer").value;
+        console.log("ADDING A PEER...", peer);
+        // send the data
+        xhr.send("peer=" + peer);
+
+        // capture the "onreadystatechange" event of the XMLHttpRequest object
+        xhr.onreadystatechange = function() {
+            // if the request is complete and successful
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                // get the response text
+                var response = xhr.responseText;
+                // update the HTML with the response text
+                //document.getElementById("feed").innerHTML = response;
+                console.log("RESPONSE: ", response);
+            }
+        };
+        // prevent the default action of the form
+        return false;
+    }
+
+    // capture the form "submit" event
+    document.getElementById("postform").onsubmit = function() {
+        // get the value of the input field
+        var post = easymde.value();
+        // get the value of the checkbox
+        var newthread = document.getElementById("newthread").checked;
+        if (newthread == false) {
+            // if the checkbox is not checked
+            // get the value of the threadid field
+            newthread = document.getElementById("threadid").value;
+        }   
+        console.log("POSTING TO THREAD...", post);
+        // create a new XMLHttpRequest object
+        var xhr = new XMLHttpRequest();
+        // set the HTTP method to POST
+        xhr.open("POST", "/post", true);
+        // set the HTTP request header to application/x-www-form-urlencoded
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        // send the data
+        xhr.send("thread=" + newthread + "post=" + post);
+
+        // capture the "onreadystatechange" event of the XMLHttpRequest object
+        xhr.onreadystatechange = function() {
+            // if the request is complete and successful
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                // get the response text
+                var response = xhr.responseText;
+                // update the HTML with the response text
+                document.getElementById("feed").innerHTML = response;
+            }
+        };
+        // prevent the default action of the form
+        return false;
+    };
+    // whenever the user clicks on a "thread-hash" div, set the value of the threadid field to the hash
+    document.getElementById("feed").onclick = function(event) {
+        var target = event.target;
+        if (target.className == "thread-hash") {
+            document.getElementById("threadid").value = target.innerText;
+            // also clear any borders on the thread-hash divs
+            var threadhashs = document.getElementsByClassName("thread-hash");
+            for (var i = 0; i < threadhashs.length; i++) {
+                threadhashs[i].style.border = "none";
+                // #373636;
+                target.style.backgroundColor = "#373636";
+            }
+            // and set the border on the thread-hash div that was clicked to like pink or something
+            target.style.border = "1px solid pink";
+            // and the background to dark grey
+            target.style.background = "rgba(0,0,0,0.1)";
+            // and uncheck newthread
+            document.getElementById("newthread").checked = false;
+        }
+    };
+    // whenever the new thread checkbox is checked, set the value of the threadid field to the empty string
+    document.getElementById("newthread").onchange = function() {
+        if (document.getElementById("newthread").checked) {
+            document.getElementById("threadid").value = "";
+            // also clear any borders on the thread-hash divs
+            var threadhashs = document.getElementsByClassName("thread-hash");
+            for (var i = 0; i < threadhashs.length; i++) {
+                threadhashs[i].style.border = "none";
+                // #373636;
+                threadhashs[i].style.backgroundColor = "#373636";
+            }
+        }
+    };
+    // once the page is loaded, wait a second and populate the feed with the latest posts from /feed
+    setTimeout(function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/feeds", true);
+        xhr.send();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var response = xhr.responseText;
+                document.getElementById("feed").innerHTML = response;
+            }
+        };
+    }, 1000);
+
+</script>
+</body>
+</html>
