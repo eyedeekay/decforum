@@ -30,11 +30,36 @@
 <input type="text" id="peer" name="peer" placeholder="http://peer.b32.i2p/db">
 <input type="submit" value="Submit">
 </form>
+<br>
+<form id="sharepeer">
+<label for="share">
+<span>Share Peer: </span>
+</label>
+<input type="text" id="share" name="share" placeholder="http://peer.b32.i2p/db">
+<input type="submit" value="Copy">
+</form>
 </div>
 <div class="container" id="feed">
 </div>
 <script>
     var easymde = new EasyMDE();
+
+    // once the page is loaded, fetch the content of /me and display it in id="share"
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch("/me")
+            .then(function(response) {
+                return response.text();
+            })
+            .then(function(text) {
+                document.getElementById("share").value = text;
+            });
+    });
+    // when the user clicks the submit button, copy the content of id="share" to the clipboard
+    document.getElementById("sharepeer").addEventListener("submit", function(event) {
+        event.preventDefault();
+        navigator.clipboard.writeText(document.getElementById("share").value);
+        alert("Copied share address to clipboard");
+    });
 
     // capture the form "submit" event for the form with id="addpeer"
     document.getElementById("addpeer").onsubmit = function() {

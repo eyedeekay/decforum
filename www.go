@@ -9,13 +9,14 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	sam "github.com/eyedeekay/sam3/helper"
 	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday"
+	"github.com/russross/blackfriday/v2"
 )
 
 //go:embed www/index.html
@@ -159,6 +160,11 @@ func ServeWWW(db string) {
 		feedsPage := createPageFromFeeds(db)
 		w.Write(feedsPage)
 	}))
+	http.Handle("/me", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		dblnb32 := dbln.Addr().String()
+		output := fmt.Sprintf("http://%s/db", []byte(dblnb32))
+		w.Write([]byte(output))
+	}))
 	http.Handle("/addpeer", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if *peers != "" {
 			if _, err := os.Stat(*peers); err == nil {
@@ -167,19 +173,29 @@ func ServeWWW(db string) {
 
 				peerbytes, err := ioutil.ReadAll(r.Body)
 				if err != nil {
-					panic(err)
+					fmt.Printf("error reading body: %v\n", err)
+					return
 				}
 				peer := strings.Split(string(peerbytes), "peer=")[1]
 				log.Println("peer", peer)
 				if peer != "" {
+					// validate the peer. First, parse it into a URL
+					_, err := url.Parse(peer)
+					if err != nil {
+						fmt.Printf("%s is not a valid URL\n", peer)
+						return
+					}
+
 					// append the peer to the end of the file at *peers
 					peersFile, err := os.OpenFile(*peers, os.O_APPEND|os.O_WRONLY, 0600)
 					if err != nil {
-						panic(err)
+						fmt.Printf("failed to open peers file: %s\n", err)
+						return
 					}
-					defer peersFile.Close()
 					peersFile.WriteString("\n" + peer)
 					log.Println("added peer: " + peer)
+					peersFile.Close()
+					defer DeduplicateLinesInFile(*peers)
 				}
 			}
 		}
@@ -226,11 +242,19 @@ func ServeWWW(db string) {
 		AddAllGitDB(db)
 	}))
 
-	http.Serve(listener, nil)
+	crt := listener.Addr().String() + ".crt"
+	pem := listener.Addr().String() + ".pem"
+	if err := checkOrNewTLSCert(listener.Addr().String(), &crt, &pem); err != nil {
+		panic(err)
+	}
+
+	if err := http.ServeTLS(listener, nil, crt, pem); err != nil {
+		panic(err)
+	}
 }
 
 func WriteThread(threadHash, body, remoteAddr string) []byte {
-	unsafe := blackfriday.MarkdownCommon([]byte(body))
+	unsafe := blackfriday.Run([]byte(body))
 	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 	div := `
 <div class="thread">
@@ -249,7 +273,7 @@ func WriteThread(threadHash, body, remoteAddr string) []byte {
 }
 
 func WritePost(threadHash, postHash, body, remoteAddr string) []byte {
-	unsafe := blackfriday.MarkdownCommon([]byte(body))
+	unsafe := blackfriday.Run([]byte(body))
 	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 	div := `
 <div class="thread-post">

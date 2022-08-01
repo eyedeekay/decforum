@@ -4,3 +4,6 @@ easymde
 decforum
 *.i2p.private
 *.i2p.public.txt
+*.crt
+*.pem
+*.crl

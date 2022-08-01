@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -109,6 +110,8 @@ func CommitAllToGitDB(dir string) {
 	log.Println("committed to git", hash)
 }
 
+var dbln net.Listener
+
 func HostARemote(dir string) error {
 	// Configure git service
 	dir, err := filepath.Abs(dir)
@@ -135,13 +138,13 @@ func HostARemote(dir string) error {
 		Handler: httpmux,
 	}
 
-	ln, err := sam.I2PListener("gitforum-db-"+randId(), "127.0.0.1:7656", "gitforum-db")
+	dbln, err = sam.I2PListener("gitforum-db-"+randId(), "127.0.0.1:7656", "gitforum-db")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Start HTTP server
-	if err := httpServer.Serve(ln); err != nil {
+	if err := httpServer.Serve(dbln); err != nil {
 		log.Fatal(err)
 	}
 	return nil

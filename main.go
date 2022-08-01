@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -13,14 +14,18 @@ import (
 var peers *string
 
 func main() {
-	peers = flag.String("peers", "", "file containing a list of peers to connect to")
+	peers = flag.String("peers", "peers", "file containing a list of peers to connect to")
 	flag.Parse()
-	if *peers == "" {
-		EnsureGitDBInitialized("db/db")
-		AddAllGitDB("db/db")
-	} else {
-		cloner()
+	if _, err := os.Stat(*peers); err != nil {
+		if err := ioutil.WriteFile(*peers, []byte(""), 0644); err != nil {
+			log.Fatal(err)
+		}
 	}
+
+	cloner()
+	EnsureGitDBInitialized("db/db")
+	AddAllGitDB("db/db")
+
 	time.Sleep(time.Second * 5)
 	go HostARemote("db")
 	go updater()
@@ -29,19 +34,18 @@ func main() {
 
 func cloner() {
 	if *peers != "" {
-		for {
-			peersListBytes, err := ioutil.ReadFile(*peers)
-			if err != nil {
-				panic(err)
-			}
-			peersList := strings.Split(string(peersListBytes), "\n")
-			for _, peer := range peersList {
+		peersListBytes, err := ioutil.ReadFile(*peers)
+		if err != nil {
+			panic(err)
+		}
+		peersList := strings.Split(string(peersListBytes), "\n")
+		for _, peer := range peersList {
+			if peer != "" {
 				CloneARemote(peer, "db/db")
 				time.Sleep(time.Second * 1)
 				log.Println("cloned in repo from", peer)
 				break
 			}
-			break
 		}
 	}
 }
