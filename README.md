@@ -20,11 +20,8 @@ sudo apt-get install nodejs npm gulp
 
 ```sh
 docker build -t eyedeekay/decforum https://github.com/eyedeekay/decforum.git
-```
-
-```sh
 docker run \
-    --detatch \
+    --detach \
     --name=decforum \
     --net=host \
     --restart=always \
