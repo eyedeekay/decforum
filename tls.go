@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -28,14 +27,6 @@ func checkOrNewTLSCert(tlsHost string, tlsCert, tlsKey *string) error {
 		}
 		if keyErr != nil {
 			fmt.Printf("Unable to read TLS key '%s'\n", *tlsKey)
-		}
-
-		fmt.Printf("Would you like to generate a new self-signed certificate for '%s'? (y or n): ", tlsHost)
-		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
-		if []byte(input)[0] != 'y' {
-			fmt.Println("Continuing without TLS")
-			return nil
 		}
 
 		if err := createTLSCertificate(tlsHost); nil != err {

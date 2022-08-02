@@ -31,6 +31,15 @@ func randId() string {
 	return fmt.Sprintf("%d", id)
 }
 
+func ReadFile(filname string) ([]byte, error) {
+	file, err := content.Open(filname)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return ioutil.ReadAll(file)
+}
+
 func ServeWWW(db string) {
 	listener, err := sam.I2PListener("gitforum-"+randId(), "127.0.0.1:7656", "gitforum")
 	if err != nil {
@@ -38,16 +47,27 @@ func ServeWWW(db string) {
 	}
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("defaulting to index.html")
-		indexBytes, err := content.Open("www/index.html")
+		top, err := ReadFile("www/top.html")
 		if err != nil {
 			panic(err)
 		}
-		index, err := ioutil.ReadAll(indexBytes)
-		if err != nil {
-			panic(err)
-		}
-		w.Write(index)
+		out := top
 
+		if !*readOnly {
+			middle, err := ReadFile("www/middle.html")
+			if err != nil {
+				panic(err)
+			}
+			out = append(out, middle...)
+		}
+
+		bottom, err := ReadFile("www/bottom.html")
+		if err != nil {
+			panic(err)
+		}
+		out = append(out, bottom...)
+		fmt.Fprintf(os.Stdout, "%s", out)
+		w.Write(out)
 	}))
 	http.Handle("/easymde.min.js", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("serving easymde.min.js")

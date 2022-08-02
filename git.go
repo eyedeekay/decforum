@@ -25,13 +25,13 @@ import (
 )
 
 // EnsureGitDBInitialized ensures that the git database is initialized, accepts directory(repository) as argument
-func EnsureGitDBInitialized(dir string) {
+func EnsureGitDBInitialized(dir string) error {
 	// check if the directory exists
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		// if it doesn't exist, create it
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 	// check if the directory is a git repository
@@ -40,19 +40,20 @@ func EnsureGitDBInitialized(dir string) {
 		// initialize the git repository
 		_, err := git.PlainInit(dir, false)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
-func AddAllGitDB(dir string) {
+func AddAllGitDB(dir string) error {
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	w, err := repo.Worktree()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	// add every file in the dir to the git repository, recursively
 	e := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
@@ -69,29 +70,33 @@ func AddAllGitDB(dir string) {
 				log.Println("adding", path)
 				what, err := w.Add(path)
 				if err != nil {
-					panic(err)
+					return err
 				}
 				log.Println(what)
 				CommitAllToGitDB(dir)
 			}
 		}
-		return err
-
+		if err != nil {
+			return fmt.Errorf("AddAllGitDB: %s", err)
+		}
+		return nil
 	})
 	if e != nil {
-		panic(e)
+		fmt.Printf("Warning: %s some records may fail to show", e)
 	}
+	return nil
 }
-func CommitAllToGitDB(dir string) {
+
+func CommitAllToGitDB(dir string) error {
 	// msg is the unix timestamp of the commit
 	msg := fmt.Sprintf("%d", time.Now().Unix())
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	w, err := repo.Worktree()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	date := time.Unix(0, 0)
 	log.Println("committing", msg, "as if it occurred on", date, "for deterministic purposes")
@@ -106,9 +111,10 @@ func CommitAllToGitDB(dir string) {
 		Committer: nil,
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	log.Println("committed to git", hash)
+	return nil
 }
 
 var dbln net.Listener
@@ -117,7 +123,7 @@ func HostARemote(dir string) error {
 	// Configure git service
 	dir, err := filepath.Abs(dir)
 	if err != nil {
-		return err
+		return fmt.Errorf("HostARemote: %s", err)
 	}
 	log.Println("configuring git service", dir)
 	service := gitkit.New(gitkit.Config{
@@ -128,7 +134,7 @@ func HostARemote(dir string) error {
 	// Configure git server. Will create git repos path if it does not exist.
 	// If hooks are set, it will also update all repos with new version of hook scripts.
 	if err := service.Setup(); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("HostARemote: %s", err)
 	}
 
 	httpmux := &http.ServeMux{}
@@ -141,12 +147,12 @@ func HostARemote(dir string) error {
 
 	dbln, err = sam.I2PListener("gitforum-db-"+randId(), "127.0.0.1:7656", "gitforum-db")
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("HostARemote: %s", err)
 	}
 
 	// Start HTTP server
 	if err := httpServer.Serve(dbln); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("HostARemote: %s", err)
 	}
 	return nil
 }
@@ -181,11 +187,11 @@ func CloneARemote(remote string, dir string) error {
 		Tags:          git.AllTags,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("CloneARemote: %s", err)
 	}
 	head, err := r.Head()
 	if err != nil {
-		return err
+		return fmt.Errorf("CloneARemote: %s", err)
 	}
 	log.Println("cloned", remote, "to", dir, "at", head.Hash())
 	// fetch all the branches
@@ -194,13 +200,13 @@ func CloneARemote(remote string, dir string) error {
 		RefSpecs:   []config.RefSpec{config.RefSpec("+refs/heads/*:refs/remotes/origin/*")},
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("CloneARemote: %s", err)
 	}
 
 	// checkout the main branch
 	w, err := r.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("CloneARemote: %s", err)
 	}
 
 	// checkout main
@@ -235,12 +241,12 @@ func PullInCommitsFromRemote(remote, dir string) error {
 
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
-		return err
+		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
 	}
 	// get the hostname from the remote, which will be an HTTP URL
 	url, err := url.Parse(remote)
 	if err != nil {
-		return err
+		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
 	}
 	hostname := url.Hostname()
 	repo.CreateRemote(&config.RemoteConfig{
@@ -251,17 +257,17 @@ func PullInCommitsFromRemote(remote, dir string) error {
 	// if the remote isn't added yet, add it, refer to it by it's hostname
 	w, err := repo.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
 	}
 	// pull from the remote
 	err = w.Pull(&git.PullOptions{RemoteName: hostname, Force: true})
 	if err != nil {
-		return err
+		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		return err
+		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
 	}
 
 	err = w.Checkout(&git.CheckoutOptions{
