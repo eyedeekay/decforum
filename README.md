@@ -39,6 +39,6 @@ docker run \
     --net=host \
     --restart=always \
     --volume=decforum:/var/lib/decforum \
-    eyedeekay/decforum
+    eyedeekay/decforum /bin/decforum -readOnly=true
 echo "https://$(docker exec decforum cat gitforum.i2p.public.txt)" > "$HOME/gitforum.i2p.public.txt"
 ```
