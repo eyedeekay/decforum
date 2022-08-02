@@ -38,16 +38,37 @@ func ServeWWW(db string) {
 	}
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("defaulting to index.html")
-		indexBytes, err := content.Open("www/index.html")
+		topBytes, err := content.Open("www/top.html")
 		if err != nil {
 			panic(err)
 		}
-		index, err := ioutil.ReadAll(indexBytes)
+		top, err := ioutil.ReadAll(topBytes)
 		if err != nil {
 			panic(err)
 		}
-		w.Write(index)
+		w.Write(top)
 
+		if !*readOnly {
+			middleBytes, err := content.Open("www/middle.html")
+			if err != nil {
+				panic(err)
+			}
+			middle, err := ioutil.ReadAll(middleBytes)
+			if err != nil {
+				panic(err)
+			}
+			w.Write(middle)
+		}
+
+		bottomBytes, err := content.Open("www/bottom.html")
+		if err != nil {
+			panic(err)
+		}
+		bottom, err := ioutil.ReadAll(bottomBytes)
+		if err != nil {
+			panic(err)
+		}
+		w.Write(bottom)
 	}))
 	http.Handle("/easymde.min.js", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("serving easymde.min.js")

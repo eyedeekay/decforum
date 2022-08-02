@@ -27,5 +27,5 @@ docker run \
     --restart=always \
     --volume=decforum:/var/lib/decforum \
     eyedeekay/decforum
-docker exec decforum cat gitforum.i2p.public.txt
+echo "https://$(docker exec decforum cat gitforum.i2p.public.txt)"
 ```
