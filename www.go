@@ -31,6 +31,15 @@ func randId() string {
 	return fmt.Sprintf("%d", id)
 }
 
+func ReadFile(filname string) ([]byte, error) {
+	file, err := content.Open(filname)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return ioutil.ReadAll(file)
+}
+
 func ServeWWW(db string) {
 	listener, err := sam.I2PListener("gitforum-"+randId(), "127.0.0.1:7656", "gitforum")
 	if err != nil {
@@ -38,21 +47,21 @@ func ServeWWW(db string) {
 	}
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("defaulting to index.html")
-		top, err := ioutil.ReadFile("www/top.html")
+		top, err := ReadFile("www/top.html")
 		if err != nil {
 			panic(err)
 		}
 		out := top
 
 		if !*readOnly {
-			middle, err := ioutil.ReadFile("www/middle.html")
+			middle, err := ReadFile("www/middle.html")
 			if err != nil {
 				panic(err)
 			}
 			out = append(out, middle...)
 		}
 
-		bottom, err := ioutil.ReadFile("www/bottom.html")
+		bottom, err := ReadFile("www/bottom.html")
 		if err != nil {
 			panic(err)
 		}
