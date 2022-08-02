@@ -1,3 +1,5 @@
+	<div class="container" id="feed"> </div>
+    <div class="container">
 		<form id="addpeer">
 			<label for="peer"> <span>Add Peer: </span> </label>
 			<input type="text" id="peer" name="peer" placeholder="http://peer.b32.i2p/db">
@@ -10,9 +12,7 @@
 		<form id="sharepeers">
 			<input type="submit" value="Share All"> </form>
 	</div>
-	<div class="container" id="feed"> </div>
 	<script>
-	var easymde = new EasyMDE();
 	// once the page is loaded, fetch the content of /me and display it in id="share"
 	document.addEventListener("DOMContentLoaded", function() {
 		fetch("/me").then(function(response) {
@@ -61,39 +61,7 @@
 			// prevent the default action of the form
 			return false;
 		}
-		// capture the form "submit" event
-	document.getElementById("postform").onsubmit = function() {
-		// get the value of the input field
-		var post = easymde.value();
-		// get the value of the checkbox
-		var newthread = document.getElementById("newthread").checked;
-		if(newthread == false) {
-			// if the checkbox is not checked
-			// get the value of the threadid field
-			newthread = document.getElementById("threadid").value;
-		}
-		console.log("POSTING TO THREAD...", post);
-		// create a new XMLHttpRequest object
-		var xhr = new XMLHttpRequest();
-		// set the HTTP method to POST
-		xhr.open("POST", "/post", true);
-		// set the HTTP request header to application/x-www-form-urlencoded
-		xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-		// send the data
-		xhr.send("thread=" + newthread + "post=" + post);
-		// capture the "onreadystatechange" event of the XMLHttpRequest object
-		xhr.onreadystatechange = function() {
-			// if the request is complete and successful
-			if(xhr.readyState === 4 && xhr.status === 200) {
-				// get the response text
-				var response = xhr.responseText;
-				// update the HTML with the response text
-				document.getElementById("feed").innerHTML = response;
-			}
-		};
-		// prevent the default action of the form
-		return false;
-	};
+
 	// whenever the user clicks on a "thread-hash" div, set the value of the threadid field to the hash
 	document.getElementById("feed").onclick = function(event) {
 		var target = event.target;
@@ -112,19 +80,6 @@
 			target.style.background = "rgba(0,0,0,0.1)";
 			// and uncheck newthread
 			document.getElementById("newthread").checked = false;
-		}
-	};
-	// whenever the new thread checkbox is checked, set the value of the threadid field to the empty string
-	document.getElementById("newthread").onchange = function() {
-		if(document.getElementById("newthread").checked) {
-			document.getElementById("threadid").value = "";
-			// also clear any borders on the thread-hash divs
-			var threadhashs = document.getElementsByClassName("thread-hash");
-			for(var i = 0; i < threadhashs.length; i++) {
-				threadhashs[i].style.border = "none";
-				// #373636;
-				threadhashs[i].style.backgroundColor = "#373636";
-			}
 		}
 	};
 	// once the page is loaded, wait a second and populate the feed with the latest posts from /feed

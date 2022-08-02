@@ -26,8 +26,12 @@ func main() {
 	}
 
 	cloner()
-	EnsureGitDBInitialized("db/db")
-	AddAllGitDB("db/db")
+	if err := EnsureGitDBInitialized("db/db"); err != nil {
+		log.Fatal(err)
+	}
+	if err := AddAllGitDB("db/db"); err != nil {
+		log.Fatal(err)
+	}
 
 	time.Sleep(time.Second * 5)
 	go HostARemote("db")
@@ -68,7 +72,7 @@ func updater() {
 					log.Println("pulled in commits from", peer)
 				}
 			}
-			time.Sleep(time.Second * 300)
+			time.Sleep(time.Second * 120)
 		}
 	}
 }

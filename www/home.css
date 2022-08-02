@@ -29,7 +29,6 @@ p {
 }
 
 img {
-    float: left;
     top: 5%;
     left: 5%;
     width: 22%;
@@ -72,12 +71,14 @@ iframe {
     margin: 2%;
 }
 
-.container {
+.container,
+#container {
     width: 36vw;
     height: 64vh;
     display: inline-block;
     margin: 0;
     padding: 0;
+    padding-top: 2%;
 }
 
 .editor-toolbar a {
@@ -92,7 +93,7 @@ iframe {
     height: unset !important;
     margin: 0;
     padding: 0;
-    float: right;
+    vertical-align: top;
     background-color: #373636;
     color: whitesmoke;
     border: #C6D9FE solid 1px;

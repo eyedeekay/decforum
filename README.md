@@ -29,3 +29,16 @@ docker run \
     eyedeekay/decforum
 echo "https://$(docker exec decforum cat gitforum.i2p.public.txt)"
 ```
+
+```sh
+docker build -t eyedeekay/decforum https://github.com/eyedeekay/decforum.git
+docker rm -f decforum; true
+docker run \
+    --detach \
+    --name=decforum \
+    --net=host \
+    --restart=always \
+    --volume=decforum:/var/lib/decforum \
+    eyedeekay/decforum
+echo "https://$(docker exec decforum cat gitforum.i2p.public.txt)" > "$HOME/gitforum.i2p.public.txt"
+```
