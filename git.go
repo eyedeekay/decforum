@@ -260,7 +260,19 @@ func PullInCommitsFromRemote(remote, dir string) error {
 		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
 	}
 	// pull from the remote
-	err = w.Pull(&git.PullOptions{RemoteName: hostname, Force: true})
+	err = w.Pull(&git.PullOptions{
+		RemoteName:    hostname,
+		Force:         true,
+		ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+	})
+	if err != nil {
+		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
+	}
+	err = w.Pull(&git.PullOptions{
+		RemoteName:    hostname,
+		Force:         true,
+		ReferenceName: plumbing.ReferenceName("refs/heads/master"),
+	})
 	if err != nil {
 		return fmt.Errorf("PullInCommitsFromRemote: %s", err)
 	}
